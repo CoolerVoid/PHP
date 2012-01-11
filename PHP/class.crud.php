@@ -1,18 +1,22 @@
 <?php
+
 // class.crud version Cooler_
 class crud
 {
     public $db;
 
- 
-    public function conn() {
+    public function conn($x) {
 //---------------------------------- CONFIGURE AQUI SEU SGBD, E O BANCO ETC...
-     $sgbd="mysql";
+    
+     $sgbd="pgsql";
+     if($x) 
+      return $sgbd;
      $host="localhost"; 
-     $user="login";
-     $pass="password"; 
+     $user="user";
+     $pass="passwd"; 
      $database="cactoo"; 
-     $port="3306";
+     $port="3009";
+
 //---------------------------------------------------------------------------
 //CASO USE PostGreSQL $conn = new PDO("pgsql:host=$host dbname=$database", $user, $pass);
 //CASO USE SQLite "sqlite:/opt/database/localblabla/seu_banco.sq3"
@@ -20,11 +24,19 @@ class crud
       $this->db = new PDO("$sgbd:host=$host;port=$port;dbname=$database", $user, $pass);
       $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
      }
-    }  
+     
+    } 
+
         public function dbSelect($table, $fieldname=null, $id=null)
         {
+            $sgdb=$this->conn(1);
+           // portabilidade xD
+            if($sgdb=="pgsql")
+             $sql = "SELECT * FROM $table WHERE $fieldname = :id";
+            if($sgdb=="mysql")
+             $sql = "SELECT * FROM `$table` WHERE `$fieldname` =:id"; 
+
             $this->conn();
-            $sql = "SELECT * FROM $table WHERE $fieldname = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $id);
             $stmt->execute();
@@ -42,8 +54,16 @@ class crud
         }
         public function dbAll($table)
         {
-            $this->conn();
-            $sql = "SELECT * FROM $table";
+
+            $sgdb=$this->conn(1);
+//   portabilidade porca xD
+            if($sgdb=="pgsql")
+             $sql = " SELECT * FROM $table ";
+
+            if($sgdb=="mysql")
+             $sql = " SELECT * FROM `$table` ";
+            
+            $this->conn(); 
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -96,21 +116,7 @@ class crud
         public function dbInsert($table, $values)
         {
 /*
-            $this->conn();
-            $sql_query="INSERT INTO `$table` (";
-            foreach($values as $key => $value)
-            {
-              $sqlkey.="$key , ";
-              $sqlvalue.=":$key , ";
-            }
-            $sql=$sql_query.$sqlkey." NULL) VALUES ( ".$sqlvalue." NULL )";
-            $stmt = $this->db->prepare($sql);
-            foreach($values as $k => $val) 
-               $stmt->BindParam(":$k", $val, PDO::PARAM_STR); 
-            print "$sql\n ";
-            $stmt->execute();
-*/
-/*
+
 INSERT INTO servico( nomeprojeto ,endereco ,maoobra ,memorial ,valor ,condicao ,situacao ,datainicio ,datasaida ,cliente ,equipamento ,servicoexe ) VALUES (:nomeprojeto, :endereco, :maoobra, :memorial, :valor, :condicao, :situacao, :datainicio, :datasaida, :cliente, :equipamento, :servicoexe )
 */
 
@@ -176,8 +182,16 @@ INSERT INTO servico( nomeprojeto ,endereco ,maoobra ,memorial ,valor ,condicao ,
          */
         public function dbDelete($table, $fieldname, $id)
         {
+            $sgdb=$this->conn(1);
+           // portabilidade xD
+            if($sgdb=="pgsql")
+             $sql = "DELETE FROM '$table' WHERE '$fieldname' = :id";
+
+            if($sgdb=="mysql")
+             $sql = "DELETE FROM `$table` WHERE `$fieldname` = :id";
+            
             $this->conn();
-            $sql = "DELETE FROM '$table' WHERE '$fieldname' = :id";
+
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $id, PDO::PARAM_STR);
             $stmt->execute();
